@@ -12,7 +12,7 @@ Safe to re-run: implement your inserts with ON CONFLICT DO NOTHING.
 import json
 import os
 import sys
-import hashlib
+from argon2 import PasswordHasher
 
 import psycopg2
 from psycopg2.extras import execute_values
@@ -51,11 +51,12 @@ def insert_many(cur, table, columns, rows):
     execute_values(cur, sql, rows)
     return cur.rowcount
 
+ph = PasswordHasher()
+
 def get_hash(text: str) -> str:
-    """Helper to simulate secure password hashing via SHA-256."""
     if not text:
         return None
-    return hashlib.sha256(text.encode('utf-8')).hexdigest()
+    return ph.hash(text)
 
 
 # ── seeders ──────────────────────────────────────────────────────────────────
@@ -186,23 +187,61 @@ def seed_seat_layouts(cur):
 
 def seed_users(cur):
     data = load("registered_users.json")
-    
+
     user_rows = []
     cred_rows = []
-    
+
     for u in data:
         user_rows.append((
-            u["user_id"], u["full_name"], u["email"], u.get("phone"),
-            u.get("date_of_birth"), u.get("secret_question"),
-            get_hash(u.get("secret_answer")), u.get("registered_at"), u.get("is_active", True)
+            u["user_id"],
+            u["full_name"],
+            u["email"],
+            u.get("phone"),
+            u.get("date_of_birth"),
+            u.get("secret_question"),
+            get_hash(u.get("secret_answer")),
+            u.get("registered_at"),
+            True
         ))
+
         cred_rows.append((
-            f"CRED-{u['user_id']}", u["user_id"], get_hash(u["password"]),
-            u.get("registered_at"), None
+            f"CRED-{u['user_id']}",
+            u["user_id"],
+            get_hash(u["password"]),
+            u.get("registered_at"),
+            None
         ))
-        
-    n_users = insert_many(cur, "registered_users", ["user_id", "full_name", "email", "phone", "date_of_birth", "secret_question", "secret_answer_hash", "registered_at", "is_active"], user_rows)
-    n_creds = insert_many(cur, "user_credentials", ["credential_id", "user_id", "password_hash", "created_at", "last_login_at"], cred_rows)
+
+    n_users = insert_many(
+        cur,
+        "registered_users",
+        [
+            "user_id",
+            "full_name",
+            "email",
+            "phone",
+            "date_of_birth",
+            "secret_question",
+            "secret_answer_hash",
+            "registered_at",
+            "is_active"
+        ],
+        user_rows
+    )
+
+    n_creds = insert_many(
+        cur,
+        "user_credentials",
+        [
+            "credential_id",
+            "user_id",
+            "password_hash",
+            "created_at",
+            "last_login_at"
+        ],
+        cred_rows
+    )
+
     print(f"  -> registered_users: {n_users} rows, user_credentials: {n_creds} rows")
 
 
@@ -281,9 +320,7 @@ def seed_payments(cur):
 
     print(f"  -> payments: {n} rows")
         
-    n = insert_many(cur, "payments", ["payment_id", "user_id", "booking_id", "trip_id", "amount_usd", "method", "status", "paid_at"], rows)
-    print(f"  -> payments: {n} rows")
-
+    
 
 def seed_feedback(cur):
     data = load("feedback.json")
