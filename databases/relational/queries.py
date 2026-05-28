@@ -230,7 +230,31 @@ def query_user_bookings(user_email: str) -> dict:
     
 def query_payment_info(booking_id: str) -> Optional[dict]:
     """Return payment record for a booking or metro trip."""
-    raise NotImplementedError("TODO: implement after designing your schema")
+
+    with _connect() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+
+            cur.execute("""
+                SELECT
+                    payment_id,
+                    booking_id,
+                    trip_id,
+                    amount_usd,
+                    method,
+                    status,
+                    paid_at
+                FROM payments
+                WHERE booking_id = %s
+                   OR trip_id = %s
+                LIMIT 1
+            """, (booking_id, booking_id))
+
+            row = cur.fetchone()
+
+            if row:
+                return dict(row)
+
+            return None
 
 
 # ── TRANSACTIONAL OPERATIONS ──────────────────────────────────────────────────
