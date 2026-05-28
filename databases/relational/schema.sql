@@ -32,7 +32,7 @@ CREATE TABLE registered_users (
 -- Delete Strategy: ON DELETE CASCADE. Login credentials cannot exist without the user. If a user is deleted, their credentials must be removed.
 CREATE TABLE user_credentials (
     credential_id varchar PRIMARY KEY,
-    user_id varchar REFERENCES registered_users(user_id) ON DELETE CASCADE,
+    user_id varchar UNIQUE REFERENCES registered_users(user_id) ON DELETE CASCADE,
     password_hash text NOT NULL,
     created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
     last_login_at timestamptz
