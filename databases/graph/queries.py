@@ -68,7 +68,34 @@ def query_shortest_route(
         dict with keys: found, origin_id, destination_id,
                         total_time_min, path (list of station dicts), legs
     """
-    raise NotImplementedError("TODO: implement after designing your graph schema")
+    with _driver() as driver:
+        with driver.session() as session:
+            result = session.run(
+                """
+                MATCH (start {station_id: $origin_id})
+                MATCH (end {station_id: $destination_id})
+                MATCH p = shortestPath((start)-[*..30]-(end))
+                RETURN p
+                """,
+                origin_id=origin_id,
+                destination_id=destination_id,
+            )
+
+            record = result.single()
+
+            if record is None:
+                return {
+                    "found": False,
+                    "origin_id": origin_id,
+                    "destination_id": destination_id,
+                }
+
+            return {
+                "found": True,
+                "origin_id": origin_id,
+                "destination_id": destination_id,
+                "path": str(record["p"]),
+            }
 
 
 # ── CHEAPEST ROUTE (Dijkstra by fare) ────────────────────────────────────────

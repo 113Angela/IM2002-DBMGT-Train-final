@@ -40,22 +40,101 @@ def seed():
         session.run("MATCH (n) DETACH DELETE n")
         print("  Cleared existing graph data")
 
-        # TODO: Design your node labels and create metro station nodes.
-        # Each station has: station_id, name, lines, and interchange info.
-        # See metro_stations.json for the full data structure.
+                # 1. Create MetroStation nodes
+        for station in metro_stations:
+            session.run(
+                """
+                MERGE (m:MetroStation {station_id: $station_id})
+                SET m.name = $name,
+                    m.lines = $lines,
+                    m.is_interchange_metro = $is_interchange_metro,
+                    m.is_interchange_national_rail = $is_interchange_national_rail,
+                    m.interchange_national_rail_station_id = $interchange_national_rail_station_id
+                """,
+                station_id=station["station_id"],
+                name=station["name"],
+                lines=station.get("lines", []),
+                is_interchange_metro=station.get("is_interchange_metro", False),
+                is_interchange_national_rail=station.get("is_interchange_national_rail", False),
+                interchange_national_rail_station_id=station.get("interchange_national_rail_station_id"),
+            )
 
-        # TODO: Design your node labels and create national rail station nodes.
-        # See national_rail_stations.json for the full data structure.
+        print(f"  Created {len(metro_stations)} MetroStation nodes")
 
-        # TODO: Design your relationship types and create metro links.
-        # Each station lists its adjacent_stations with line and travel_time_min.
-        # Consider what properties to store on the relationship.
+        # 2. Create NationalRailStation nodes
+        for station in rail_stations:
+            session.run(
+                """
+                MERGE (r:NationalRailStation {station_id: $station_id})
+                SET r.name = $name,
+                    r.lines = $lines,
+                    r.is_interchange_metro = $is_interchange_metro,
+                    r.interchange_metro_station_id = $interchange_metro_station_id
+                """,
+                station_id=station["station_id"],
+                name=station["name"],
+                lines=station.get("lines", []),
+                is_interchange_metro=station.get("is_interchange_metro", False),
+                interchange_metro_station_id=station.get("interchange_metro_station_id"),
+            )
 
-        # TODO: Design your relationship types and create national rail links.
+        print(f"  Created {len(rail_stations)} NationalRailStation nodes")
 
-        # TODO: Create interchange relationships between metro and rail stations.
-        # Interchange info is in the is_interchange_national_rail field
-        # of metro_stations.json.
+        # 3. Create METRO_LINK relationships
+        for station in metro_stations:
+            for adjacent in station.get("adjacent_stations", []):
+                session.run(
+                    """
+                    MATCH (a:MetroStation {station_id: $from_id})
+                    MATCH (b:MetroStation {station_id: $to_id})
+                    MERGE (a)-[r:METRO_LINK {line: $line}]->(b)
+                    SET r.travel_time_min = $travel_time_min
+                    """,
+                    from_id=station["station_id"],
+                    to_id=adjacent["station_id"],
+                    line=adjacent.get("line"),
+                    travel_time_min=adjacent.get("travel_time_min", 0),
+                )
+
+        print("  Created METRO_LINK relationships")
+
+        # 4. Create RAIL_LINK relationships
+        for station in rail_stations:
+            for adjacent in station.get("adjacent_stations", []):
+                session.run(
+                    """
+                    MATCH (a:NationalRailStation {station_id: $from_id})
+                    MATCH (b:NationalRailStation {station_id: $to_id})
+                    MERGE (a)-[r:RAIL_LINK {line: $line}]->(b)
+                    SET r.travel_time_min = $travel_time_min
+                    """,
+                    from_id=station["station_id"],
+                    to_id=adjacent["station_id"],
+                    line=adjacent.get("line"),
+                    travel_time_min=adjacent.get("travel_time_min", 0),
+                )
+
+        print("  Created RAIL_LINK relationships")
+
+        # 5. Create INTERCHANGE_TO relationships
+        for station in metro_stations:
+            rail_id = station.get("interchange_national_rail_station_id")
+
+            if rail_id:
+                session.run(
+                    """
+                    MATCH (m:MetroStation {station_id: $metro_id})
+                    MATCH (r:NationalRailStation {station_id: $rail_id})
+                    MERGE (m)-[i:INTERCHANGE_TO]->(r)
+                    SET i.travel_time_min = 5
+                    MERGE (r)-[j:INTERCHANGE_TO]->(m)
+                    SET j.travel_time_min = 5
+                    """,
+                    metro_id=station["station_id"],
+                    rail_id=rail_id,
+                )
+
+        print("  Created INTERCHANGE_TO relationships")
 
     driver.close()
     print("\nNeo4j graph seeded successfully.")
