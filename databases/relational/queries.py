@@ -184,7 +184,29 @@ def auto_select_adjacent_seats(available_seats: list[dict], count: int) -> list[
 
 def query_user_profile(user_email: str) -> Optional[dict]:
     """Return a user's profile by email."""
-    raise NotImplementedError("TODO: implement after designing your schema")
+
+    with _connect() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("""
+                SELECT
+                    user_id,
+                    full_name,
+                    email,
+                    phone,
+                    date_of_birth,
+                    registered_at,
+                    is_active
+                FROM registered_users
+                WHERE email = %s
+                LIMIT 1
+            """, (user_email,))
+
+            row = cur.fetchone()
+
+            if row:
+                return dict(row)
+
+            return None
 
 
 def query_user_bookings(user_email: str) -> dict:
@@ -194,12 +216,67 @@ def query_user_bookings(user_email: str) -> dict:
     Returns:
         dict with keys 'national_rail' (list) and 'metro' (list)
     """
-    raise NotImplementedError("TODO: implement after designing your schema")
 
-
+    with _connect() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("""
+                SELECT
+                    b.booking_id,
+                    b.travel_date,
+                    b.amount_usd,
+                    b.status
+                FROM bookings b
+                JOIN registered_users u
+                ON b.user_id = u.user_id
+                WHERE u.email = %s
+                ORDER BY b.travel_date DESC
+            """, (user_email,))
+            national_rows = [dict(row) for row in cur.fetchall()]
+            cur.execute("""
+                SELECT
+                    m.trip_id,
+                    m.travel_date,
+                    m.amount_usd,
+                    m.status
+                FROM metro_travel_history m
+                JOIN registered_users u
+                ON m.user_id = u.user_id
+                WHERE u.email = %s
+                ORDER BY m.travel_date DESC
+            """, (user_email,))
+            metro_rows = [dict(row) for row in cur.fetchall()]
+            return {
+                "national_rail": national_rows,
+                "metro": metro_rows
+                }
+    
 def query_payment_info(booking_id: str) -> Optional[dict]:
     """Return payment record for a booking or metro trip."""
-    raise NotImplementedError("TODO: implement after designing your schema")
+
+    with _connect() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+
+            cur.execute("""
+                SELECT
+                    payment_id,
+                    booking_id,
+                    trip_id,
+                    amount_usd,
+                    method,
+                    status,
+                    paid_at
+                FROM payments
+                WHERE booking_id = %s
+                   OR trip_id = %s
+                LIMIT 1
+            """, (booking_id, booking_id))
+
+            row = cur.fetchone()
+
+            if row:
+                return dict(row)
+
+            return None
 
 
 # ── TRANSACTIONAL OPERATIONS ──────────────────────────────────────────────────
