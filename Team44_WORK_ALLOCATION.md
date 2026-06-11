@@ -35,8 +35,8 @@
 
 | Section                                     | Primary Author | Supporting Member(s) | Notes                                 |
 | ------------------------------------------- | -------------- | -------------------- | ------------------------------------- |
-| Section 1 — ER Diagram                      | 梁瑋文         | —                    | Designed using ERD tools              |
-| Section 2 — Normalisation Justification     | 王若琳         | —                    | Based on schema design decisions      |
+| Section 1 — ER Diagram                      | 梁瑋文         | 蘇晏婷                    | Designed using ERD tools              |
+| Section 2 — Normalisation Justification     | 蘇晏婷         | 王若琳                   | Based on schema design decisions      |
 | Section 3 — Graph Database Design Rationale | 梁瑋文         | —                    | Neo4j node/relationship design        |
 | Section 4 — Vector / RAG Design             | 王若琳         | —                    | ChromaDB + policy document indexing   |
 | Section 5 — AI Tool Usage Evidence          | All members    | —                    | Each member documented their AI usage |
