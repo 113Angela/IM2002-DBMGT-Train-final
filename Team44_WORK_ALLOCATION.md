@@ -11,7 +11,7 @@
 | --------- | ---------- | --------------- | ----------------------------- |
 | 梁瑋文    | 113403506  | 113Angela       | angela.ww.liang@gmail.com     |
 | 蘇晏婷    | 113403006  | kiisu950626     | kikisu950626@gmail.com        |
-| 王若琳    | 1134034    | michellewm20    | michelleaurelwangsa@gmail.com |
+| 王若琳    | 113403049  | michellewm20    | michelleaurelwangsa@gmail.com |
 
 ---
 
