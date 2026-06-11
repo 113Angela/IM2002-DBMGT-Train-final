@@ -2,7 +2,7 @@
 # TransitFlow — Design Document
 
 **Team ID:** Team44  
-**Members:** [Angela's full name], [Kiki's full name], 王若琳  
+**Members:** 梁瑋文, 蘇晏婷, 王若琳  
 **Submission Date:** 2026-06-12
 
 ---
